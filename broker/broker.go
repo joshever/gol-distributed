@@ -7,18 +7,6 @@ import (
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
-var nodeAddr string
-
-func initFlags() {
-	nodeAddr = flag.Lookup("nodeAddr").Value.(flag.Getter).Get().(string)
-}
-
-func init() {
-	if flag.Lookup("nodeAddr") == nil {
-		flag.StringVar(&nodeAddr, "nodeAddr", "127.0.0.1:8040", "this is nodeAddr")
-	}
-}
-
 type BrokerOperations struct{}
 
 func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveResponse) (err error) {
@@ -26,9 +14,8 @@ func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveRespon
 }
 
 func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerResponse) (err error) {
-	initFlags()
 	flag.Parse()
-	node, dialErr := rpc.Dial("tcp", nodeAddr)
+	node, dialErr := rpc.Dial("tcp", "127.0.0.1:8040")
 	gol.Handle(dialErr)
 	defer node.Close()
 
