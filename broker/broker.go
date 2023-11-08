@@ -19,8 +19,7 @@ func init() {
 	}
 }
 
-type BrokerOperations struct {
-}
+type BrokerOperations struct{}
 
 func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveResponse) (err error) {
 	return
