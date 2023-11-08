@@ -13,7 +13,7 @@ func Next(p Params, world [][]byte, update chan [][]byte) {
 
 func calculateNextState(p Params, world [][]byte, startY, endY int) [][]byte {
 	// Deep Copy each world to avoid shared memory
-	newWorld := makeNewWorld(p, world)
+	newWorld := MakeNewWorld(p, world)
 	for j := startY; j < endY; j++ {
 		for i := 0; i < p.ImageWidth; i++ {
 			// Use un-copied world as operations are read only
@@ -44,7 +44,7 @@ func createEmptyWorld(p Params) [][]byte {
 	return world
 }
 
-func makeNewWorld(p Params, world [][]byte) [][]byte {
+func MakeNewWorld(p Params, world [][]byte) [][]byte {
 	newWorld := createEmptyWorld(p)
 	for k := range world {
 		copy(newWorld[k], world[k])

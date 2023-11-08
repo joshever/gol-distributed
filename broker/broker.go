@@ -19,10 +19,14 @@ func init() {
 	}
 }
 
-type BrokerOperations struct{}
+type BrokerOperations struct {
+}
+
+func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveResponse) (err error) {
+	return
+}
 
 func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerResponse) (err error) {
-
 	initFlags()
 	flag.Parse()
 	node, dialErr := rpc.Dial("tcp", nodeAddr)
@@ -35,7 +39,6 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	p := req.P
 	world := req.World
 	request.P = p
-
 	// Return world to distributor if no turns
 	if p.Turns == 0 {
 		res.World = world
@@ -44,6 +47,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
+		// Call node to calculate next
 		request.World = world
 		nodeErr := node.Call(gol.GolHandler, request, response)
 		gol.Handle(nodeErr)
@@ -54,9 +58,9 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 }
 
 func main() {
+	rpc.Register(&BrokerOperations{})
 	DistAddr := flag.String("DistAddr", "8030", "Dist Listener Port")
 	flag.Parse()
-	rpc.Register(&BrokerOperations{})
 	listener, _ := net.Listen("tcp", ":"+*DistAddr)
 	defer listener.Close()
 	rpc.Accept(listener)

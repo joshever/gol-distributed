@@ -1,24 +1,22 @@
 package gol
 
 import (
-	"sync"
+	"net/rpc"
 	"time"
 )
 
 // Ticker function
-func ticker(w *World, c distributorChannels, tickerDone chan bool, pauseTicker chan bool, mutex *sync.Mutex) {
+func ticker(c distributorChannels, broker *rpc.Client, tickerDone chan bool) {
 	tick := time.NewTicker(2 * time.Second)
 	for {
 		select {
-		case <-pauseTicker:
-			<-pauseTicker
 		case <-tickerDone:
 			return
 		case <-tick.C:
-			// Mutex to cover data race for w
-			mutex.Lock()
-			c.events <- AliveCellsCount{w.turns, len(calculateAliveCells(w.world))}
-			mutex.Unlock()
+			response := new(AliveResponse)
+			brokerErr := broker.Call(TickerHandler, new(AliveRequest), response)
+			Handle(brokerErr)
+			c.events <- AliveCellsCount{response.Turns, response.Alive}
 		}
 	}
 }

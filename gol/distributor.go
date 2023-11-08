@@ -33,34 +33,38 @@ func distributor(p Params, c distributorChannels) {
 	world := setup(p, c)
 	request := DistributorRequest{P: p, World: world}
 	response := new(BrokerResponse)
+	tickerDone := make(chan bool)
+	go ticker(c, broker, tickerDone)
 	brokerErr := broker.Call(BrokerHandler, request, response)
 	Handle(brokerErr)
 	world = response.World
 
 	// Final Turn Complete
-	finalState := FinalTurnComplete{p.Turns, calculateAliveCells(world)}
+	writePgm(p, c, world)
+	finalState := FinalTurnComplete{p.Turns, CalculateAliveCells(world)}
 	c.events <- finalState
 	// Make sure that the Io has finished any output before exiting.
 	c.ioCommand <- ioCheckIdle
 	<-c.ioIdle
 	c.events <- StateChange{p.Turns, Quitting}
+	tickerDone <- true
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)
 }
 
 // Declare functions used in goroutines
-func writePgm(p Params, c distributorChannels, w *World) {
-	outputFilename := fmt.Sprintf("%dx%dx%d", p.ImageWidth, p.ImageHeight, w.turns)
+func writePgm(p Params, c distributorChannels, world [][]byte) {
+	outputFilename := fmt.Sprintf("%dx%dx%d", p.ImageWidth, p.ImageHeight, p.Turns)
 	c.ioCommand <- ioOutput
 	c.ioFilename <- outputFilename
 	for j := 0; j < p.ImageHeight; j++ {
 		for i := 0; i < p.ImageWidth; i++ {
-			c.ioOutput <- w.world[j][i]
+			c.ioOutput <- world[j][i]
 		}
 	}
 }
 
-func calculateAliveCells(world [][]byte) []util.Cell {
+func CalculateAliveCells(world [][]byte) []util.Cell {
 	var cells = []util.Cell{}
 	for j := range world {
 		for i := range world[0] {
