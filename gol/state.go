@@ -1,6 +1,6 @@
 package gol
 
-func next(p Params, world [][]byte, update chan [][]byte) {
+func Next(p Params, world [][]byte, update chan [][]byte) {
 	// Sequential if 1 thread
 	if p.Threads == 1 {
 		world = calculateNextState(p, world, 0, p.ImageHeight)

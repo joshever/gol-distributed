@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
 	"uk.ac.bris.cs/gameoflife/gol"
 	"uk.ac.bris.cs/gameoflife/util"
 )
