@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/rpc"
 	"sync"
@@ -43,6 +44,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
+		fmt.Println("Executing turn", i)
 		// Update interface data
 		mutex.Lock()
 		alive = len(gol.CalculateAliveCells(world))
