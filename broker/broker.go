@@ -34,6 +34,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	p := req.P
 	world := req.World
 	request.P = p
+
 	// Return world to distributor if no turns
 	if p.Turns == 0 {
 		res.World = world
