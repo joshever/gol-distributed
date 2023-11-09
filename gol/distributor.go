@@ -32,12 +32,10 @@ func distributor(p Params, c distributorChannels) {
 	defer broker.Close()
 	Handle(dialErr)
 
-	// Initialise world and call broker
+	// Initialise world and initialise broker response/request
 	world := setup(p, c)
 	request := DistributorRequest{P: p, World: world}
 	response := new(BrokerResponse)
-	brokerErr := broker.Call(BrokerHandler, request, response)
-	Handle(brokerErr)
 
 	// Initialise go routine channels and cal
 	tickerDone := make(chan bool)
@@ -47,7 +45,11 @@ func distributor(p Params, c distributorChannels) {
 	go keyPresses(p, c, broker, tickerDone)
 	go sdl(p, c, broker, sdlDone, world)
 
+	// Call broker and get back final world
+	brokerErr := broker.Call(BrokerHandler, request, response)
+	Handle(brokerErr)
 	world = response.World
+
 	// Final Turn Complete
 	writePgm(p, c, world, p.Turns)
 	finalState := FinalTurnComplete{p.Turns, CalculateAliveCells(world)}
