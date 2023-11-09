@@ -12,8 +12,15 @@ import (
 var alive int
 var turns int
 var mutex sync.Mutex
+var World [][]byte
 
 type BrokerOperations struct{}
+
+func (b *BrokerOperations) Save(req gol.SaveRequest, res *gol.SaveResponse) (err error) {
+	res.World = World
+	res.Turns = turns
+	return
+}
 
 func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveResponse) (err error) {
 	mutex.Lock()
@@ -47,6 +54,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		fmt.Println("Executing turn", i)
 		// Update interface data
 		mutex.Lock()
+		World = world
 		alive = len(gol.CalculateAliveCells(world))
 		turns = i
 		mutex.Unlock()
