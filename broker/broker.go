@@ -6,7 +6,6 @@ import (
 	"net/rpc"
 	"os"
 	"sync"
-	"time"
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
@@ -64,17 +63,26 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 	// Return world to distributor if no turns
 	if p.Turns == 0 {
-		res.World = world
+		res.World = req.World
 		return
 	}
-
+	fmt.Println(quit)
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
-		if quit || shutDown {
-			end(quit, shutDown, node)
+		if quit {
+			fmt.Println(quit)
+			quit = false
+			fmt.Println("Resetting state..")
+			res.World = world
+			return
+		} else if shutDown {
+			shutDown = false
+			node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
+			fmt.Println("Quitting Broker...")
+			os.Exit(0)
 			return
 		}
-		fmt.Println("Executing turn", i)
+		fmt.Println("Executing turn", i+1)
 		// Update interface data
 		mutex.Lock()
 		World = world
@@ -88,22 +96,6 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		world = response.World
 	}
 	res.World = response.World
-	return
-}
-
-func end(quit bool, shutDown bool, node *rpc.Client) {
-	if quit {
-		quit = false
-		fmt.Println("Resetting state..")
-	}
-	if shutDown {
-		node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
-		fmt.Println("Quitting Broker...")
-		go func() {
-			time.Sleep(10 * time.Millisecond)
-			os.Exit(0)
-		}()
-	}
 	return
 }
 

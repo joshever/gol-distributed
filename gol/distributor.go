@@ -42,14 +42,11 @@ func distributor(p Params, c distributorChannels) {
 	keyPressesDone := make(chan bool)
 	sdlDone := make(chan bool)
 	go ticker(c, broker, tickerDone)
-	go keyPresses(p, c, broker, tickerDone, sdlDone)
-	go sdl(p, c, broker, sdlDone, world)
-
+	go keyPresses(p, c, broker, keyPressesDone, sdlDone)
+	//go sdl(p, c, broker, sdlDone, world)
 	// Call broker and get back final world
-	brokerErr := broker.Call(BrokerHandler, request, response)
-	Handle(brokerErr)
+	broker.Call(BrokerHandler, request, response)
 	world = response.World
-
 	// Final Turn Complete
 	writePgm(p, c, world, p.Turns)
 	finalState := FinalTurnComplete{p.Turns, CalculateAliveCells(world)}
@@ -60,7 +57,6 @@ func distributor(p Params, c distributorChannels) {
 	c.events <- StateChange{p.Turns, Quitting}
 	tickerDone <- true
 	keyPressesDone <- true
-	sdlDone <- true
 	// Close the channel to stop the SDL goroutine gracefully. Removing may cause deadlock.
 	close(c.events)
 }

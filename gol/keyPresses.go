@@ -38,7 +38,6 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				saveError := broker.Call(SaveHandler, request, response)
 				Handle(saveError)
 				writePgm(p, c, response.World, response.Turns)
-				sdlDone <- true
 				shutDownError := broker.Call(ShutBrokerHandler, new(ShutdownRequest), new(ShutdownResponse))
 				Handle(shutDownError)
 				c.ioCommand <- ioCheckIdle
