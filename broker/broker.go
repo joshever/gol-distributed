@@ -29,8 +29,6 @@ func (b *BrokerOperations) Quit(req gol.QuitRequest, res *gol.QuitResponse) (err
 
 func (b *BrokerOperations) Shutdown(req gol.ShutdownRequest, res *gol.ShutdownResponse) (err error) {
 	mutex.Lock()
-	res.Turns = turns
-	res.World = World
 	shutDown = true
 	mutex.Unlock()
 	return
@@ -72,16 +70,9 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
-		if quit {
-			quit = false
-			fmt.Println("Resetting state..")
+		if quit || shutDown {
+			end(quit, shutDown, node)
 			return
-		}
-		if shutDown {
-			node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
-			fmt.Println("Quitting Broker...")
-			time.Sleep(5 * time.Second)
-			os.Exit(0)
 		}
 		fmt.Println("Executing turn", i)
 		// Update interface data
@@ -97,6 +88,22 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		world = response.World
 	}
 	res.World = response.World
+	return
+}
+
+func end(quit bool, shutDown bool, node *rpc.Client) {
+	if quit {
+		quit = false
+		fmt.Println("Resetting state..")
+	}
+	if shutDown {
+		node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
+		fmt.Println("Quitting Broker...")
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			os.Exit(0)
+		}()
+	}
 	return
 }
 
