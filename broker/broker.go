@@ -1,11 +1,12 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"sync"
+	"time"
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
@@ -13,12 +14,33 @@ var alive int
 var turns int
 var mutex sync.Mutex
 var World [][]byte
+var quit bool
+var shutDown bool
 
 type BrokerOperations struct{}
 
+func (b *BrokerOperations) Quit(req gol.QuitRequest, res *gol.QuitResponse) (err error) {
+	mutex.Lock()
+	res.Turns = turns
+	quit = true
+	mutex.Unlock()
+	return
+}
+
+func (b *BrokerOperations) Shutdown(req gol.ShutdownRequest, res *gol.ShutdownResponse) (err error) {
+	mutex.Lock()
+	res.Turns = turns
+	res.World = World
+	shutDown = true
+	mutex.Unlock()
+	return
+}
+
 func (b *BrokerOperations) Save(req gol.SaveRequest, res *gol.SaveResponse) (err error) {
+	mutex.Lock()
 	res.World = World
 	res.Turns = turns
+	mutex.Unlock()
 	return
 }
 
@@ -31,7 +53,6 @@ func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveRespon
 }
 
 func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerResponse) (err error) {
-	flag.Parse()
 	node, dialErr := rpc.Dial("tcp", "127.0.0.1:8040")
 	gol.Handle(dialErr)
 	defer node.Close()
@@ -51,6 +72,17 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
+		if quit {
+			quit = false
+			fmt.Println("Resetting state..")
+			return
+		}
+		if shutDown {
+			node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
+			fmt.Println("Quitting Broker...")
+			time.Sleep(5 * time.Second)
+			os.Exit(0)
+		}
 		fmt.Println("Executing turn", i)
 		// Update interface data
 		mutex.Lock()
@@ -70,9 +102,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 func main() {
 	rpc.Register(&BrokerOperations{})
-	DistAddr := flag.String("DistAddr", "8030", "Dist Listener Port")
-	flag.Parse()
-	listener, _ := net.Listen("tcp", ":"+*DistAddr)
+	listener, _ := net.Listen("tcp", ":"+"8030")
 	defer listener.Close()
 	rpc.Accept(listener)
 }

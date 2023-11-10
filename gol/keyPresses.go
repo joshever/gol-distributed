@@ -1,7 +1,9 @@
 package gol
 
 import (
+	"fmt"
 	"net/rpc"
+	"os"
 )
 
 // Key Presses Function
@@ -20,21 +22,26 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				Handle(saveError)
 				writePgm(p, c, response.World, response.Turns)
 				clearKeys(c)
-				//case 'q':
-				//	writePgm(p, c, w)
-				//	c.ioCommand <- ioCheckIdle
-				//	<-c.ioIdle
-				//	c.events <- StateChange{w.turns, Quitting}
-				//	os.Exit(0)
-				//case 'p':
-				//	if pause == false {
-				//		fmt.Println(fmt.Sprintf("Currently processing: %d", w.turns))
-				//		pause = true
-				//	} else {
-				//		fmt.Println("Continuing")
-				//		pause = false
-				//	}
-				//	clearKeys(c)
+			case 'q':
+				request := new(QuitRequest)
+				response := new(QuitResponse)
+				quitError := broker.Call(QuitHandler, request, response)
+				Handle(quitError)
+				c.ioCommand <- ioCheckIdle
+				<-c.ioIdle
+				c.events <- StateChange{response.Turns, Quitting}
+				os.Exit(0)
+			case 'k':
+				request := new(ShutdownRequest)
+				response := new(ShutdownResponse)
+				fmt.Println("Quitting Distributor...")
+				shutDownError := broker.Call(ShutBrokerHandler, request, response)
+				Handle(shutDownError)
+				writePgm(p, c, response.World, response.Turns)
+				c.ioCommand <- ioCheckIdle
+				<-c.ioIdle
+				c.events <- StateChange{response.Turns, Quitting}
+				os.Exit(0)
 			}
 		}
 	}

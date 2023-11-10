@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net"
 	"net/rpc"
+	"os"
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
@@ -19,10 +21,16 @@ func (q *GolOperations) Update(req gol.BrokerRequest, res *gol.NodeResponse) (er
 	return
 }
 
+func (q *GolOperations) Shutdown(req gol.ShutdownRequest, res *gol.ShutdownResponse) (err error) {
+	fmt.Println("Quitting Node...")
+	os.Exit(0)
+	return
+}
+
 func main() {
+	rpc.Register(&GolOperations{})
 	BrokerAddr := flag.String("broker", "8040", "Broker Listener Port")
 	flag.Parse()
-	rpc.Register(&GolOperations{})
 	listener, _ := net.Listen("tcp", ":"+*BrokerAddr)
 	defer listener.Close()
 	rpc.Accept(listener)
