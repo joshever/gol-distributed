@@ -65,25 +65,34 @@ func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveRespon
 }
 
 func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerResponse) (err error) {
+	// Connect to node
 	node, dialErr := rpc.Dial("tcp", "127.0.0.1:8040")
 	gol.Handle(dialErr)
 	defer node.Close()
 
 	// Initialise world, p and request/response
-	response := new(gol.NodeResponse)
-	request := new(gol.BrokerRequest)
 	p := req.P
 	world := req.World
-	World = gol.CreateEmptyWorld(p)
+	response := new(gol.NodeResponse)
+	request := new(gol.BrokerRequest)
 	request.P = p
+
+	// Initialise globals
+	mutex.Lock()
+	World = world
+	turns = 0
+	alive = len(gol.CalculateAliveCells(World))
+	mutex.Unlock()
 
 	// Return world to distributor if no turns
 	if p.Turns == 0 {
 		res.World = req.World
 		return
 	}
+
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
+		// Checks global quit, shutdown, pause
 		if quit {
 			quit = false
 			fmt.Println("Resetting state..")
@@ -113,7 +122,6 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		alive = len(gol.CalculateAliveCells(World))
 		turns = i + 1
 		mutex.Unlock()
-
 	}
 	res.World = response.World
 	return
