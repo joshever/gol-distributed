@@ -27,13 +27,13 @@ type distributorChannels struct {
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 
-	world := setup(p, c)
 	// Dial broker
 	broker, dialErr := rpc.Dial("tcp", "127.0.0.1:8030")
 	defer broker.Close()
 	Handle(dialErr)
 
 	// Initialise world and initialise broker response/request
+	world := setup(p, c)
 	request := DistributorRequest{P: p, World: world, Events: c.events}
 	response := new(BrokerResponse)
 
