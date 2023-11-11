@@ -7,14 +7,16 @@ var SaveHandler = "BrokerOperations.Save"
 var QuitHandler = "BrokerOperations.Quit"
 var ShutBrokerHandler = "BrokerOperations.Shutdown"
 var ShutNodeHandler = "GolOperations.Shutdown"
+var PauseHandler = "BrokerOperations.Pause"
 
 type BrokerResponse struct {
 	World [][]byte
 }
 
 type DistributorRequest struct {
-	P     Params
-	World [][]byte
+	Events chan<- Event
+	P      Params
+	World  [][]byte
 }
 
 type BrokerRequest struct {
@@ -44,6 +46,12 @@ type SaveResponse struct {
 type QuitRequest struct{}
 
 type QuitResponse struct {
+	Turns int
+}
+
+type PauseRequest struct{}
+
+type PauseResponse struct {
 	Turns int
 }
 

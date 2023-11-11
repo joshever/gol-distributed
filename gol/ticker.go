@@ -6,10 +6,12 @@ import (
 )
 
 // Ticker function
-func ticker(c distributorChannels, broker *rpc.Client, tickerDone chan bool) {
+func ticker(c distributorChannels, broker *rpc.Client, tickerDone chan bool, pauseTicker chan bool) {
 	tick := time.NewTicker(2 * time.Second)
 	for {
 		select {
+		case <-pauseTicker:
+			<-pauseTicker
 		case <-tickerDone:
 			return
 		case <-tick.C:

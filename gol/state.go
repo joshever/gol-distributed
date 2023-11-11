@@ -36,7 +36,7 @@ func calculateNextState(p Params, world [][]byte, startY, endY int) [][]byte {
 	return newWorld
 }
 
-func createEmptyWorld(p Params) [][]byte {
+func CreateEmptyWorld(p Params) [][]byte {
 	world := make([][]byte, p.ImageHeight)
 	for k := range world {
 		world[k] = make([]byte, p.ImageWidth)
@@ -45,7 +45,7 @@ func createEmptyWorld(p Params) [][]byte {
 }
 
 func MakeNewWorld(p Params, world [][]byte) [][]byte {
-	newWorld := createEmptyWorld(p)
+	newWorld := CreateEmptyWorld(p)
 	for k := range world {
 		copy(newWorld[k], world[k])
 	}

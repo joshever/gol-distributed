@@ -7,8 +7,8 @@ import (
 )
 
 // Key Presses Function
-func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesDone chan bool, sdlDone chan bool) {
-	//pause := false
+func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesDone chan bool, pauseTicker chan bool) {
+	pause := false
 	for {
 		select {
 		case <-keyPressesDone:
@@ -32,10 +32,9 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				c.events <- StateChange{response.Turns, Quitting}
 				os.Exit(0)
 			case 'k':
-				request := new(SaveRequest)
 				response := new(SaveResponse)
 				fmt.Println("Quitting Distributor...")
-				saveError := broker.Call(SaveHandler, request, response)
+				saveError := broker.Call(SaveHandler, new(SaveRequest), response)
 				Handle(saveError)
 				writePgm(p, c, response.World, response.Turns)
 				shutDownError := broker.Call(ShutBrokerHandler, new(ShutdownRequest), new(ShutdownResponse))
@@ -44,6 +43,18 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				<-c.ioIdle
 				c.events <- StateChange{response.Turns, Quitting}
 				os.Exit(0)
+			case 'p':
+				pauseTicker <- true
+				response := new(PauseResponse)
+				broker.Call(PauseHandler, new(PauseRequest), response)
+				if pause == false {
+					fmt.Println("Currently Executing", response.Turns+1)
+					pause = true
+				} else {
+					fmt.Println("Continuing")
+					pause = false
+				}
+				clearKeys(c)
 			}
 		}
 	}

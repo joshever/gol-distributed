@@ -9,14 +9,29 @@ import (
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
-var alive int
-var turns int
-var mutex sync.Mutex
-var World [][]byte
-var quit bool
-var shutDown bool
+var (
+	alive    int
+	turns    int
+	mutex    sync.Mutex
+	World    [][]byte
+	quit     bool
+	shutDown bool
+	pause    bool
+)
 
 type BrokerOperations struct{}
+
+func (b *BrokerOperations) Pause(req gol.PauseRequest, res *gol.PauseResponse) (err error) {
+	mutex.Lock()
+	res.Turns = turns
+	if pause {
+		pause = false
+	} else {
+		pause = true
+	}
+	mutex.Unlock()
+	return
+}
 
 func (b *BrokerOperations) Quit(req gol.QuitRequest, res *gol.QuitResponse) (err error) {
 	mutex.Lock()
@@ -59,6 +74,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	request := new(gol.BrokerRequest)
 	p := req.P
 	world := req.World
+	World = gol.CreateEmptyWorld(p)
 	request.P = p
 
 	// Return world to distributor if no turns
@@ -66,11 +82,9 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		res.World = req.World
 		return
 	}
-	fmt.Println(quit)
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
 		if quit {
-			fmt.Println(quit)
 			quit = false
 			fmt.Println("Resetting state..")
 			res.World = world
@@ -81,19 +95,25 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 			fmt.Println("Quitting Broker...")
 			os.Exit(0)
 			return
+		} else if pause {
+			for pause {
+			}
 		}
-		fmt.Println("Executing turn", i+1)
-		// Update interface data
-		mutex.Lock()
-		World = world
-		alive = len(gol.CalculateAliveCells(world))
-		turns = i
-		mutex.Unlock()
+
 		// Call node to calculate next
+		fmt.Println("Executing turn", i+1)
 		request.World = world
 		nodeErr := node.Call(gol.GolHandler, request, response)
 		gol.Handle(nodeErr)
 		world = response.World
+
+		// Update global data
+		mutex.Lock()
+		World = world
+		alive = len(gol.CalculateAliveCells(World))
+		turns = i + 1
+		mutex.Unlock()
+
 	}
 	res.World = response.World
 	return

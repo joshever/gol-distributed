@@ -27,23 +27,23 @@ type distributorChannels struct {
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
 
+	world := setup(p, c)
 	// Dial broker
 	broker, dialErr := rpc.Dial("tcp", "127.0.0.1:8030")
 	defer broker.Close()
 	Handle(dialErr)
 
 	// Initialise world and initialise broker response/request
-	world := setup(p, c)
-	request := DistributorRequest{P: p, World: world}
+	request := DistributorRequest{P: p, World: world, Events: c.events}
 	response := new(BrokerResponse)
 
 	// Initialise go routine channels and cal
 	tickerDone := make(chan bool)
 	keyPressesDone := make(chan bool)
-	sdlDone := make(chan bool)
-	go ticker(c, broker, tickerDone)
-	go keyPresses(p, c, broker, keyPressesDone, sdlDone)
-	//go sdl(p, c, broker, sdlDone, world)
+	pauseTicker := make(chan bool)
+	go ticker(c, broker, tickerDone, pauseTicker)
+	go keyPresses(p, c, broker, keyPressesDone, pauseTicker)
+
 	// Call broker and get back final world
 	broker.Call(BrokerHandler, request, response)
 	world = response.World
@@ -93,7 +93,7 @@ func setup(p Params, c distributorChannels) [][]byte {
 
 	// Local turn and world variables
 	// world is filled byte by byte from IO input
-	world := createEmptyWorld(p)
+	world := CreateEmptyWorld(p)
 	for j := 0; j < p.ImageHeight; j++ {
 		for i := 0; i < p.ImageWidth; i++ {
 			nextByte := <-c.ioInput
