@@ -49,7 +49,7 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				response := new(PauseResponse)
 				if pause == false {
 					broker.Call(PauseHandler, new(PauseRequest), response)
-					fmt.Println("Currently Executing", response.Turns+1)
+					fmt.Println("Currently Executing", response.Turns)
 					pause = true
 				} else {
 					broker.Call(UnpauseHandler, new(PauseRequest), response)
