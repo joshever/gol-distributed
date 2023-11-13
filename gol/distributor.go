@@ -34,7 +34,7 @@ func distributor(p Params, c distributorChannels) {
 
 	// Initialise world and initialise broker response/request
 	world := setup(p, c)
-	request := DistributorRequest{P: p, World: world, Events: c.events}
+	request := DistributorRequest{P: p, World: world}
 	response := new(BrokerResponse)
 
 	// Initialise go routine channels and cal
