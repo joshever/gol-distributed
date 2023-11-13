@@ -9,11 +9,6 @@ import (
 const ALIVE = byte(255)
 const DEAD = byte(0)
 
-type World struct {
-	world [][]byte
-	turns int
-}
-
 type distributorChannels struct {
 	events     chan<- Event
 	ioCommand  chan<- ioCommand
