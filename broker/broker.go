@@ -24,11 +24,7 @@ type BrokerOperations struct{}
 func (b *BrokerOperations) Pause(req gol.PauseRequest, res *gol.PauseResponse) (err error) {
 	mutex.Lock()
 	res.Turns = turns
-	if pause {
-		pause = false
-	} else {
-		pause = true
-	}
+	pause = !pause
 	mutex.Unlock()
 	return
 }
