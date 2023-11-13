@@ -16,7 +16,6 @@ var (
 	World    [][]byte
 	quit     bool
 	shutDown bool
-	pause    bool
 )
 
 type BrokerOperations struct{}
@@ -24,7 +23,10 @@ type BrokerOperations struct{}
 func (b *BrokerOperations) Pause(req gol.PauseRequest, res *gol.PauseResponse) (err error) {
 	mutex.Lock()
 	res.Turns = turns
-	pause = !pause
+	return
+}
+
+func (b *BrokerOperations) Unpause(req gol.PauseRequest, res *gol.PauseResponse) (err error) {
 	mutex.Unlock()
 	return
 }
@@ -89,20 +91,20 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	// Call node to carry out each turn and return when done
 	for i := 0; i < p.Turns; i++ {
 		// Checks global quit, shutdown, pause
+		mutex.Lock()
 		if quit {
 			quit = false
 			fmt.Println("Resetting state..")
 			res.World = world
+			mutex.Unlock()
 			return
 		} else if shutDown {
 			shutDown = false
 			node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
 			fmt.Println("Quitting Broker...")
+			mutex.Unlock()
 			os.Exit(0)
 			return
-		} else if pause {
-			for pause {
-			}
 		}
 
 		// Call node to calculate next
@@ -113,7 +115,6 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		world = response.World
 
 		// Update global data
-		mutex.Lock()
 		World = world
 		alive = len(gol.CalculateAliveCells(World))
 		turns = i + 1

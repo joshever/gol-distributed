@@ -42,7 +42,7 @@ func distributor(p Params, c distributorChannels) {
 	keyPressesDone := make(chan bool)
 	pauseTicker := make(chan bool)
 	go ticker(c, broker, tickerDone, pauseTicker)
-	go keyPresses(p, c, broker, keyPressesDone, pauseTicker)
+	go keyPresses(p, c, broker, keyPressesDone, pauseTicker, tickerDone)
 
 	// Call broker and get back final world
 	broker.Call(BrokerHandler, request, response)

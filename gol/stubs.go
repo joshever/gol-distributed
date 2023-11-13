@@ -8,6 +8,7 @@ var QuitHandler = "BrokerOperations.Quit"
 var ShutBrokerHandler = "BrokerOperations.Shutdown"
 var ShutNodeHandler = "GolOperations.Shutdown"
 var PauseHandler = "BrokerOperations.Pause"
+var UnpauseHandler = "BrokerOperations.Unpause"
 
 type BrokerResponse struct {
 	World [][]byte

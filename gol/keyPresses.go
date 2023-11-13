@@ -7,7 +7,7 @@ import (
 )
 
 // Key Presses Function
-func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesDone chan bool, pauseTicker chan bool) {
+func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesDone chan bool, pauseTicker chan bool, tickerDone chan bool) {
 	pause := false
 	for {
 		select {
@@ -32,6 +32,7 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 				c.events <- StateChange{response.Turns, Quitting}
 				os.Exit(0)
 			case 'k':
+				tickerDone <- true
 				response := new(SaveResponse)
 				fmt.Println("Quitting Distributor...")
 				saveError := broker.Call(SaveHandler, new(SaveRequest), response)
@@ -46,11 +47,12 @@ func keyPresses(p Params, c distributorChannels, broker *rpc.Client, keyPressesD
 			case 'p':
 				pauseTicker <- true
 				response := new(PauseResponse)
-				broker.Call(PauseHandler, new(PauseRequest), response)
 				if pause == false {
+					broker.Call(PauseHandler, new(PauseRequest), response)
 					fmt.Println("Currently Executing", response.Turns+1)
 					pause = true
 				} else {
+					broker.Call(UnpauseHandler, new(PauseRequest), response)
 					fmt.Println("Continuing")
 					pause = false
 				}
