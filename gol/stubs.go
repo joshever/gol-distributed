@@ -15,9 +15,8 @@ type BrokerResponse struct {
 }
 
 type DistributorRequest struct {
-	Events chan<- Event
-	P      Params
-	World  [][]byte
+	P     Params
+	World [][]byte
 }
 
 type BrokerRequest struct {
