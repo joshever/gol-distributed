@@ -1,21 +1,25 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"net/rpc"
 	"os"
+	"strings"
 	"sync"
 	"uk.ac.bris.cs/gameoflife/gol"
 )
 
 var (
-	alive    int
-	turns    int
-	mutex    sync.Mutex
-	World    [][]byte
-	quit     bool
-	shutDown bool
+	alive     int
+	turns     int
+	mutex     sync.Mutex
+	World     [][]byte
+	quit      bool
+	shutDown  bool
+	nodeAddrs []string
+	nodes     []*rpc.Client
 )
 
 type BrokerOperations struct{}
@@ -63,18 +67,15 @@ func (b *BrokerOperations) AliveCells(req gol.AliveRequest, res *gol.AliveRespon
 }
 
 func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerResponse) (err error) {
-	// Connect to node
-	node, dialErr := rpc.Dial("tcp", "127.0.0.1:8040")
-	gol.Handle(dialErr)
-	defer node.Close()
-
-	// Initialise world, p and request/response
+	// Connect to nodes
+	nodes = make([]*rpc.Client, len(nodeAddrs))
+	for i, addr := range nodeAddrs {
+		nodes[i], _ = rpc.Dial("tcp", "127.0.0.1:"+addr)
+	}
+	// Initialise world, p and strip size
 	p := req.P
 	world := req.World
-	response := new(gol.NodeResponse)
-	request := new(gol.BrokerRequest)
-	request.P = p
-
+	height := p.ImageHeight / len(nodes)
 	// Initialise globals
 	mutex.Lock()
 	World = world
@@ -100,19 +101,23 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 			return
 		} else if shutDown {
 			shutDown = false
-			node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
+			for _, node := range nodes {
+				node.Call(gol.ShutNodeHandler, new(gol.ShutdownRequest), new(gol.ShutdownResponse))
+			}
 			fmt.Println("Quitting Broker...")
 			mutex.Unlock()
 			os.Exit(0)
 			return
 		}
 
-		// Call node to calculate next
+		// Make lists of requests, Responses and Done calls
+		requests := make([]gol.BrokerRequest, len(nodes))
+		responses := make([]gol.NodeResponse, len(nodes))
+		done := make([]chan *rpc.Call, len(nodes))
+
+		// Call nodes to calculate next
 		fmt.Println("Executing turn", i+1)
-		request.World = world
-		nodeErr := node.Call(gol.GolHandler, request, response)
-		gol.Handle(nodeErr)
-		world = response.World
+		world = callNodes(p, nodes, requests, responses, done, world, height)
 
 		// Update global data
 		World = world
@@ -120,11 +125,46 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 		turns = i + 1
 		mutex.Unlock()
 	}
-	res.World = response.World
+	res.World = world
+	for _, node := range nodes {
+		node.Close()
+	}
 	return
 }
 
+func callNodes(p gol.Params, nodes []*rpc.Client, requests []gol.BrokerRequest, responses []gol.NodeResponse, done []chan *rpc.Call, world [][]byte, height int) [][]byte {
+	for j, node := range nodes {
+		responses[j] = *new(gol.NodeResponse)
+		requests[j] = *new(gol.BrokerRequest)
+		requests[j].P = p
+		requests[j].World = world
+		requests[j].StartY = j * height
+		if j == len(nodes)-1 {
+			requests[j].EndY = p.ImageHeight
+		} else {
+			requests[j].EndY = (j + 1) * height
+		}
+		done[j] = make(chan *rpc.Call, 1)
+		node.Go(gol.GolHandler, requests[j], &responses[j], done[j])
+	}
+	var newWorld [][]byte
+	for k := range nodes {
+		<-done[k]
+		startY := requests[k].StartY
+		endY := requests[k].EndY
+		newWorld = append(newWorld, responses[k].World[startY:endY]...)
+	}
+	return newWorld
+}
+
 func main() {
+	// Parse node addresses from command line
+	var stringList string
+	flag.StringVar(&stringList, "stringList", "", "Comma-separated list of strings")
+	flag.Parse()
+	nodeAddrs = strings.Split(stringList, ",")
+	fmt.Println("Node Addresses: " + stringList)
+	// listen for distributor connection
 	rpc.Register(&BrokerOperations{})
 	listener, _ := net.Listen("tcp", ":"+"8030")
 	defer listener.Close()

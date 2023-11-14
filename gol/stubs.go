@@ -20,8 +20,10 @@ type DistributorRequest struct {
 }
 
 type BrokerRequest struct {
-	P     Params
-	World [][]byte
+	StartY int
+	EndY   int
+	P      Params
+	World  [][]byte
 }
 
 type NodeResponse struct {

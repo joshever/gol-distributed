@@ -15,7 +15,7 @@ func (q *GolOperations) Update(req gol.BrokerRequest, res *gol.NodeResponse) (er
 	world := req.World
 	p := req.P
 	update := make(chan [][]byte)
-	go gol.Next(p, world, update)
+	go gol.Next(p, world, update, req.StartY, req.EndY)
 	world = <-update
 	res.World = world
 	return
