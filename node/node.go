@@ -28,10 +28,12 @@ func (q *GolOperations) Shutdown(req gol.ShutdownRequest, res *gol.ShutdownRespo
 }
 
 func main() {
-	rpc.Register(&GolOperations{})
-	BrokerAddr := flag.String("broker", "8040", "Broker Listener Port")
+	var port string
+	flag.StringVar(&port, "port", "8070", "Node Listener Port")
 	flag.Parse()
-	listener, _ := net.Listen("tcp", ":"+*BrokerAddr)
+	fmt.Println("Node port:", port)
+	listener, _ := net.Listen("tcp", ":"+port)
 	defer listener.Close()
+	rpc.Register(&GolOperations{})
 	rpc.Accept(listener)
 }
