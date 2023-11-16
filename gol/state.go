@@ -73,3 +73,32 @@ func findAliveNeighbours(p Params, world [][]byte, x int, y int) int {
 	}
 	return alive
 }
+
+func parallel(p Params, world [][]byte, startY int, endY int) [][]byte {
+	var newPixelData [][]byte
+	newHeight := (endY - startY) / p.Threads
+	// List of channels for each thread
+	channels := make([]chan [][]byte, p.Threads)
+	for i := 0; i < p.Threads; i++ {
+		channels[i] = make(chan [][]byte)
+		// Cover gaps missed due to rounding in last strip
+		if i == p.Threads-1 {
+			go worker(p, i*newHeight, endY, world, channels[i])
+		} else {
+			go worker(p, i*newHeight, (i+1)*newHeight, world, channels[i])
+		}
+	}
+	for i := 0; i < p.Threads; i++ {
+		// Read from specific channels in order to reassemble
+		newPixelData = append(newPixelData, <-channels[i]...)
+	}
+	return newPixelData
+}
+
+func worker(p Params, startY, endY int, world [][]byte, out chan<- [][]uint8) {
+	// Pass whole world which is then deep copied
+	returned := calculateNextState(p, world, startY, endY)
+	// Slice output into correct strip
+	returned = returned[startY:endY]
+	out <- returned
+}
