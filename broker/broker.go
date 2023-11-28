@@ -70,7 +70,7 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	// Connect to nodes
 	nodes = make([]*rpc.Client, len(nodeAddrs))
 	for i, addr := range nodeAddrs {
-		nodes[i], _ = rpc.Dial("tcp", "127.0.0.1:"+addr)
+		nodes[i], _ = rpc.Dial("tcp", addr)
 	}
 	// Initialise world, p and strip size
 	p := req.P

@@ -1,14 +1,14 @@
 package gol
 
-var GolHandler = "GolOperations.Update"
-var BrokerHandler = "BrokerOperations.Execute"
-var TickerHandler = "BrokerOperations.AliveCells"
-var SaveHandler = "BrokerOperations.Save"
-var QuitHandler = "BrokerOperations.Quit"
-var ShutBrokerHandler = "BrokerOperations.Shutdown"
-var ShutNodeHandler = "GolOperations.Shutdown"
 var PauseHandler = "BrokerOperations.Pause"
 var UnpauseHandler = "BrokerOperations.Unpause"
+var QuitHandler = "BrokerOperations.Quit"
+var ShutBrokerHandler = "BrokerOperations.Shutdown"
+var SaveHandler = "BrokerOperations.Save"
+var TickerHandler = "BrokerOperations.AliveCells"
+var BrokerHandler = "BrokerOperations.Execute"
+var GolHandler = "GolOperations.Update"
+var ShutNodeHandler = "GolOperations.Shutdown"
 
 type BrokerResponse struct {
 	World [][]byte

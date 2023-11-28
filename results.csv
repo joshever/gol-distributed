@@ -1,0 +1,8 @@
+goos: darwin
+goarch: arm64
+pkg: uk.ac.bris.cs/gameoflife
+,results.out
+,sec/op,CI
+Gol/512x512x1000-1-8,10.530682500000001,25%
+Gol/512x512x1000-2-8,12.282077292,∞
+geomean,11.372715436627782

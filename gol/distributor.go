@@ -23,7 +23,7 @@ type distributorChannels struct {
 func distributor(p Params, c distributorChannels) {
 
 	// Dial broker
-	broker, dialErr := rpc.Dial("tcp", "127.0.0.1:8030")
+	broker, dialErr := rpc.Dial("tcp", "35.171.150.223:6969")
 	defer broker.Close()
 	Handle(dialErr)
 
