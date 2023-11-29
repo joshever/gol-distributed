@@ -49,7 +49,7 @@ func distributor(p Params, c distributorChannels) {
 	defer broker.Close()
 	Handle(dialErr)
 
-	// Accept Connection from Broker to recieve SDL
+	// Accept Connection from Broker to receive SDL
 	go func() {
 		rpc.Register(&DistributorOperations{})
 		listener, _ := net.Listen("tcp", ":"+"8090")
