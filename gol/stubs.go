@@ -9,6 +9,7 @@ var TickerHandler = "BrokerOperations.AliveCells"
 var BrokerHandler = "BrokerOperations.Execute"
 var GolHandler = "GolOperations.Update"
 var ShutNodeHandler = "GolOperations.Shutdown"
+var SDLHandler = "DistributorOperations.SDL"
 
 type BrokerResponse struct {
 	World [][]byte
@@ -62,4 +63,11 @@ type ShutdownRequest struct{}
 type ShutdownResponse struct {
 	World [][]byte
 	Turns int
+}
+
+type SDLRequest struct {
+	CellsFlipped [][]byte
+	Turns        int
+}
+type SDLResponse struct {
 }

@@ -70,8 +70,10 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 	// Connect to nodes
 	nodes = make([]*rpc.Client, len(nodeAddrs))
 	for i, addr := range nodeAddrs {
-		nodes[i], _ = rpc.Dial("tcp", addr)
+		nodes[i], _ = rpc.Dial("tcp", ":"+addr)
 	}
+
+	distributor, _ := rpc.Dial("tcp", ":8090")
 	// Initialise world, p and strip size
 	p := req.P
 	world := req.World
@@ -117,8 +119,9 @@ func (b *BrokerOperations) Execute(req gol.DistributorRequest, res *gol.BrokerRe
 
 		// Call nodes to calculate next
 		fmt.Println("Executing turn", i+1)
+		old := gol.MakeNewWorld(p, world)
 		world = callNodes(p, nodes, requests, responses, done, world, height)
-
+		sdl(p, distributor, old, world, i)
 		// Update global data
 		World = world
 		alive = len(gol.CalculateAliveCells(World))
@@ -155,6 +158,21 @@ func callNodes(p gol.Params, nodes []*rpc.Client, requests []gol.BrokerRequest, 
 		newWorld = append(newWorld, responses[k].World[startY:endY]...)
 	}
 	return newWorld
+}
+
+func sdl(p gol.Params, distributor *rpc.Client, old, world [][]byte, i int) {
+	cellsFlipped := gol.CreateEmptyWorld(p)
+	for j := 0; j < p.ImageHeight; j++ {
+		for k := 0; k < p.ImageWidth; k++ {
+			if world[j][k] != old[j][k] {
+				cellsFlipped[j][k] = gol.ALIVE
+			}
+		}
+	}
+	request := new(gol.SDLRequest)
+	request.Turns = i + 1
+	request.CellsFlipped = cellsFlipped
+	distributor.Call(gol.SDLHandler, request, new(gol.SDLResponse))
 }
 
 func main() {

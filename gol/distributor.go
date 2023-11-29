@@ -2,6 +2,7 @@ package gol
 
 import (
 	"fmt"
+	"net"
 	"net/rpc"
 	"uk.ac.bris.cs/gameoflife/util"
 )
@@ -19,13 +20,43 @@ type distributorChannels struct {
 	keys       <-chan rune
 }
 
+var (
+	P Params
+	C distributorChannels
+)
+
+type DistributorOperations struct{}
+
+// SDL called by RPC from broker to send events
+func (d *DistributorOperations) SDL(req SDLRequest, res *SDLResponse) (err error) {
+	for j := 0; j < P.ImageHeight; j++ {
+		for k := 0; k < P.ImageWidth; k++ {
+			if req.CellsFlipped[j][k] == ALIVE {
+				C.events <- CellFlipped{req.Turns, util.Cell{k, j}}
+			}
+		}
+	}
+	C.events <- TurnComplete{req.Turns}
+	return
+}
+
 // distributor divides the work between workers and interacts with other goroutines.
 func distributor(p Params, c distributorChannels) {
-
+	P = p
+	C = c
 	// Dial broker
-	broker, dialErr := rpc.Dial("tcp", "35.171.150.223:6969")
+	broker, dialErr := rpc.Dial("tcp", "127.0.0.1:8030")
 	defer broker.Close()
 	Handle(dialErr)
+
+	// Accept Connection from Broker to recieve SDL
+	go func() {
+		rpc.Register(&DistributorOperations{})
+		listener, _ := net.Listen("tcp", ":"+"8090")
+		defer listener.Close()
+		conn, _ := listener.Accept()
+		go rpc.ServeConn(conn)
+	}()
 
 	// Initialise world and initialise broker response/request
 	world := setup(p, c)
